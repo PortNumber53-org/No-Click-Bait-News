@@ -54,7 +54,9 @@ func Error(w http.ResponseWriter, status int, detail string) {
 func DecodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
+	// Unknown fields are deliberately ignored. Clients (Flutter, web) are
+	// released independently of the backend, so a newer client that adds a
+	// field must not make an older backend reject an otherwise valid request.
 	if err := decoder.Decode(dst); err != nil {
 		Error(w, http.StatusBadRequest, "Invalid request body")
 		return false
