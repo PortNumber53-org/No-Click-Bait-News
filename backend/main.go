@@ -259,6 +259,7 @@ func loadConfigINI() {
 		if err != nil {
 			continue
 		}
+		defer f.Close()
 		sc := bufio.NewScanner(f)
 		for sc.Scan() {
 			line := strings.TrimSpace(sc.Text())
@@ -274,11 +275,24 @@ func loadConfigINI() {
 			}
 			key = strings.TrimSpace(key)
 			val = strings.TrimSpace(val)
-			val = strings.Trim(val, "'")
+			val = stripEnclosingQuotes(val)
 			if key != "" && os.Getenv(key) == "" {
 				os.Setenv(key, val)
 			}
 		}
-		f.Close()
+		if err := sc.Err(); err != nil {
+			log.Printf("Warning: error reading config file %s: %v", p, err)
+		}
 	}
+}
+
+// stripEnclosingQuotes removes exactly one matching pair of enclosing single or double quotes.
+// It preserves unquoted values (including leading/trailing apostrophes) and mismatched quotes.
+func stripEnclosingQuotes(s string) string {
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
 }
